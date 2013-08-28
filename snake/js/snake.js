@@ -1,11 +1,15 @@
 $(function(){
-    console.log('document ready');
     var self = this,
         canvas = document.getElementById('snakeCanvas'),
         canvasContext = canvas.getContext('2d'),
+        snakeParts = [],
+        snakeCollidedWithRightWall = false,
+        snakeCollidedWithLeftWall = false,
+        snakeCollidedWithTopWall = false,
+        snakeCollidedWithBottomWall = false,
+        //partMoved = false,
         snake_game = {
             game : this,
-            snakeParts : [],
             gameProperties : {
                                 version     : '0.0.1',
                                 revision    : '0.0.0',
@@ -14,57 +18,86 @@ $(function(){
                              
             initialisePlayGround : function() {
                 var thisGame = this;
-                console.log('initialising playground');
                 if( canvas ){
-                    console.log('canvas not undefined');
-                    thisGame._drawSnake(0,0);
+                    canvasContext.fillStyle = "green";
+                    canvasContext.fillRect( 0, 0, canvas.width , canvas.height );
+                    thisGame._drawSnake(10,10);
                     thisGame._bindKeyEvents();
+                    
                 }
             },
             
             _drawSnake : function( x , y ){
                 var thisGame = this;
                 for ( var i=1 ; i<6 ; i++){
-                    canvasContext.fillStyle = "#ff0000";
+                    canvasContext.fillStyle = "brown";
                     canvasContext.fillRect(x,y,10,10);
                     x += 12;
-                    thisGame.snakeParts.push({x:x, y:y});
+                    snakeParts.push({x:x, y:y});
                 }
             },
             
             
             _bindKeyEvents : function() {
-                console.log('binding key events ');
                 var thisGame = this;
                 
-                var doKeyUp = function(e){
-                    //console.log(e.keyCode);
+                var keydown = function(e){
                     switch( e.keyCode ){
-                        case 37 : console.log(thisGame.snakeParts);
-                                  var firstPart = thisGame.snakeParts[0];
-                                  console.log(firstPart,canvas);
-                                  if( firstPart.x > 0 ){
-                                    thisGame.snakeParts = thisGame.snakeParts.slice( 0, thisGame.snakeParts.length-1 );
-                                    firstPart = thisGame.snakeParts[0];
-                                    thisGame.snakeParts.push({x:(firstPart.x)-12, y:firstPart.y});
+                        case 37 : e.preventDefault();
+                                  var firstPart = snakeParts[0];
+                                  if( (firstPart.x - 12) >= 0 ){
+                                    snakeCollidedWithRightWall = false;
+                                  }
+                                  if( !(snakeCollidedWithRightWall) && (firstPart.x - 12) >= 0 ){
+                                    snakeParts = snakeParts.slice( 0, snakeParts.length-1 );
+                                    snakeParts.splice(0,0,{x:((firstPart.x)-12), y:firstPart.y});
+                                    $.each(snakeParts, function( i,part ){
+                                        console.log( part.x, part.y );
+                                    });
                                     drawParts();
                                   }
+                                  else {
+                                    snakeCollidedWithRightWall = true;
+                                  }
                                   break;
-                        case 38 : //moveUp();
+                        case 38 : e.preventDefault();
+                                  var lastPart = snakeParts[snakeParts.length-1];
+                                  var firstPart = snakeParts[0];
+                                  snakeParts = snakeParts.slice( 0, snakeParts.length-1 );
+                                    if( firstPart.y == lastPart.y ){
+                                        snakeParts.splice(0,0,{x:((firstPart.x)-12), y:((firstPart.y)-12)});
+                                    }
+                                    else { 
+                                        snakeParts.splice(0,0,{x:firstPart.x, y:((firstPart.y)-12)});
+                                    }
+                                    drawParts();
                                   break;
-                        case 39 : //moveRight();
-                                  console.log(thisGame.snakeParts);
-                                  var lastPart = thisGame.snakeParts[thisGame.snakeParts.length-1];
-                                  console.log(lastPart,canvas);
-                                  if( lastPart.x < canvas.width ){
-                                    thisGame.snakeParts = thisGame.snakeParts.slice(1);
-                                    lastPart = thisGame.snakeParts[thisGame.snakeParts.length-1];
-                                    thisGame.snakeParts.push({x:(lastPart.x)+12, y:lastPart.y});
+                        case 39 : e.preventDefault();
+                                  var lastPart = snakeParts[snakeParts.length-1];
+                                  if( (lastPart.x + 12) < canvas.width ){
+                                    snakeCollidedWithLeftWall = false;
+                                  }
+                                  if( !(snakeCollidedWithLeftWall) && (lastPart.x + 12) < canvas.width ){
+                                    snakeParts = snakeParts.slice(1);
+                                    lastPart = snakeParts[snakeParts.length-1];
+                                    snakeParts.push({x:((lastPart.x)+12), y:lastPart.y});
                                     drawParts();
                                   }
-                                  
+                                  else {
+                                    snakeCollidedWithLeftWall = true;
+                                  }
                                   break;
-                        case 40 : //moveDown();
+                        case 40 : e.preventDefault();
+                                  var lastPart = snakeParts[snakeParts.length-1];
+                                  var firstPart = snakeParts[0];
+                                  snakeParts = snakeParts.slice(1);
+                                   if( firstPart.y == lastPart.y ){
+                                        snakeParts.push({x:((lastPart.x)+12), y:((lastPart.y)+12)});
+                                    }
+                                    else {
+                                        snakeParts.push({x:lastPart.x, y:((lastPart.y)+12)});
+                                    }
+                                    drawParts();
                                   break;
                     }
                 }
@@ -77,20 +110,28 @@ $(function(){
                     console.log(e.keyCode+" pressed");
                 }
                 
-                drawParts = function(){
+                var drawParts = function(){
                         thisGame.clearCanvas();
-                        $.each(thisGame.snakeParts, function(){
+                        canvasContext.fillStyle = "green";
+                        canvasContext.fillRect( 0, 0, canvas.width , canvas.height );
+                        $.each(snakeParts, function(){
                                 var part = this;
-                                canvasContext.fillStyle = "#ff0000";
-                                canvasContext.fillRect(part.x,part.y,10,10);
+                                //console.log(this.x,this.y);
+                                canvasContext.fillStyle = "brown";
+                                canvasContext.fillRect( part.x, part.y, 10 ,10 );
                         });
                 }
                 
-                canvas.addEventListener( "keyup", doKeyUp , true);
-                canvas.addEventListener( "click", click , true);
-                canvas.addEventListener( "keypress", keypress , true);
+                /*var partsInStraightLine = function() {
+                        for(var i=0,j=i+1 ; i++, j++ ; i<snakeParts.length){
+                            if( snakeParts[i].x ==  snakeParts[j].x )
+                        }
                 
-            
+                }*/
+                
+                canvas.addEventListener( "click", click , true);
+                canvas.addEventListener( "keydown", keydown , true);
+               
             },
             
             _getRandomPositionForFood : function() {
